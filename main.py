@@ -1,79 +1,84 @@
-import getpass
-import secrets
-import string
+import platform
+import socket
+import subprocess
 
-SPECIAL_CHARACTERS = "!@#$%^&*()-_=+[]{};:,.?/"
-
-
-def check_password_strength():
-    password = getpass.getpass("Enter a password to check (input is hidden): ")
-    checks = {
-        "at least 12 characters": len(password) >= 12,
-        "an uppercase letter": any(char.isupper() for char in password),
-        "a lowercase letter": any(char.islower() for char in password),
-        "a number": any(char.isdigit() for char in password),
-        "a special character": any(char in SPECIAL_CHARACTERS for char in password),
-    }
-
-    score = sum(checks.values())
-    print("\n--- Result ---")
-    if score == len(checks):
-        print("Strong by these basic checks. This is only a rough estimate.")
-    elif score >= 3:
-        print("Some criteria are met; consider improving the password.")
-    else:
-        print("This password may be easy to guess. Consider using a longer passphrase.")
-
-    for description, passed in checks.items():
-        if not passed:
-            print(f"- Consider using {description}.")
+COMMON_LOCAL_PORTS = [21, 22, 23, 80, 443, 8080]
 
 
-def generate_password():
+def banner():
+    print("=" * 50)
+    print("       MrA-SecKit - Local Diagnostics")
+    print("       Checks this device only")
+    print("=" * 50)
+
+
+def check_local_ports():
+    """Check selected TCP ports on this device only (127.0.0.1)."""
+    host = "127.0.0.1"
+    print(f"\n--- Checking selected ports on this device ({host}) ---")
+    for port in COMMON_LOCAL_PORTS:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.settimeout(0.5)
+                if sock.connect_ex((host, port)) == 0:
+                    print(f"[+] Port {port}: open on this device")
+                else:
+                    print(f"[-] Port {port}: closed or not responding")
+        except OSError as error:
+            print(f"[-] Could not check port {port}: {error}")
+
+
+def show_wifi_networks():
+    """Display Wi-Fi networks visible to this device using OS utilities."""
+    print("\n--- Wi-Fi networks visible to this device ---")
     try:
-        length = int(input("Password length (12 or more; default 16): ").strip() or "16")
-    except ValueError:
-        print("Invalid length; using 16 characters.")
-        length = 16
+        system = platform.system()
+        if system == "Windows":
+            command = ["netsh", "wlan", "show", "networks", "mode=bssid"]
+        elif system == "Linux":
+            command = ["nmcli", "dev", "wifi"]
+        else:
+            print("[-] Wi-Fi listing is not configured for this operating system.")
+            return
 
-    if length < 12:
-        print("Using the minimum length of 12 characters.")
-        length = 12
-
-    groups = [
-        string.ascii_uppercase,
-        string.ascii_lowercase,
-        string.digits,
-        SPECIAL_CHARACTERS,
-    ]
-    alphabet = "".join(groups)
-    password_chars = [secrets.choice(group) for group in groups]
-    password_chars.extend(secrets.choice(alphabet) for _ in range(length - len(password_chars)))
-    secrets.SystemRandom().shuffle(password_chars)
-
-    print("\nGenerated password (store it in a password manager):")
-    print("".join(password_chars))
+        result = subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=15,
+        )
+        print(result.stdout or "No networks were listed.")
+    except FileNotFoundError:
+        print("[-] Required Wi-Fi command was not found on this device.")
+    except subprocess.CalledProcessError as error:
+        print(f"[-] Wi-Fi listing failed: {error.stderr.strip() or error}")
+    except subprocess.TimeoutExpired:
+        print("[-] Wi-Fi listing timed out.")
+    except OSError as error:
+        print(f"[-] Could not list Wi-Fi networks: {error}")
 
 
 def main():
+    banner()
     while True:
-        print("\n==============================")
-        print("       MrA-SecKit")
-        print("==============================")
-        print("1. Check Password Strength")
-        print("2. Generate Strong Password")
+        print("\nChoose an option:")
+        print("1. Check selected ports on this device")
+        print("2. List Wi-Fi networks visible to this device")
         print("3. Exit")
 
-        choice = input("Select an option (1-3): ").strip()
+        choice = input("\nSelect option (1-3): ").strip()
         if choice == "1":
-            check_password_strength()
+            check_local_ports()
         elif choice == "2":
-            generate_password()
+            show_wifi_networks()
         elif choice == "3":
-            print("Stay safe!")
-            return
+            print("Exiting tool. Stay safe!")
+            break
         else:
-            print("Invalid choice. Select 1, 2, or 3.")
+            print("Invalid choice; select 1, 2, or 3.")
 
 
 if __name__ == "__main__":
