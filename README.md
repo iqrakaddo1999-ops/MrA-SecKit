@@ -1,6 +1,6 @@
 # MrA-SecKit
 
-🛡️ MrA-SecKit: A lightweight, menu-driven Python cybersecurity toolkit by MrA — featuring a Password Checker, Strong Password Generator, Network Scanner, and Port Scanner.
+An ethical local cybersecurity toolkit designed for educational purposes, password strength checks, and authorized local network testing only.
 
 ## Features
 - Password Strength Checker
