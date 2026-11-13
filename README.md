@@ -1,42 +1,20 @@
 # MrA-SecKit
 
-An ethical local cybersecurity toolkit designed for educational purposes, password strength checks, and authorized local network testing only.
+An educational Python toolkit for basic password strength checks and secure password generation. Network scanning features are not included.
 
 ## Features
-- Password Strength Checker
-- Strong Password Generator
-- Local Network Device Scanner
-- Port Scanner
+- Password strength checker (input is hidden while entered)
+- Password generator using Python's `secrets` module
 
-## Important Safety Notice
-This project is intended for educational use and authorized testing only.
+## Run
+Python 3 is required. No third-party packages are needed.
 
-Use it only on:
-- your own device
-- your own local network
-- a network you own or have explicit permission to test
-
-Do not scan public, third-party, or unknown systems without authorization.
-
-## Run It
 ```bash
 python main.py
 ```
 
-## Example Menu
-```text
-=========================================
-   🛡️  MrA-SecKit: Ethical Toolkit   
-=========================================
-1. Check Password Strength
-2. Generate Strong Password
-3. Scan Local Network Devices
-4. Scan Open Ports on an IP
-5. Exit
-=========================================
-```
-
-## Notes
-- The network scan is designed for private/local ranges.
-- The port scan is restricted to private or loopback addresses.
-- This project is for responsible cybersecurity learning and authorized testing.
+## Privacy and limitations
+- The password checker evaluates a password locally and does not send it over the network. Avoid reusing important passwords for testing; use a sample instead.
+- Strength checks are a simple guide, not a guarantee of security.
+- Generated passwords are displayed in the terminal. Store them securely, such as in a trusted password manager.
+- This project does not scan networks, hosts, or ports.
