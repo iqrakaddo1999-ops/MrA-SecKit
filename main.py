@@ -1,273 +1,264 @@
 import json
 import os
-from datetime import datetime
+import hashlib
+import secrets
+import string
+import base64
+from urllib.parse import urlparse
 
-APP_NAME = "MR-A-SECKIT GOLD"
+APP = "MrA-SecKit GOLD"
 VERSION = "3.0"
-DATA_FILE = "gold_data.json"
+DATA = "gold_stats.json"
 
 TOOLS = [
-    {"name": "Password Generator", "category": "Password", "description": "Generate secure random passwords."},
-    {"name": "Password Strength Checker", "category": "Password", "description": "Check password strength locally."},
-    {"name": "Hash Generator", "category": "Cryptography", "description": "Generate SHA256 hashes."},
-    {"name": "Hash Identifier", "category": "Cryptography", "description": "Learn about common hash formats."},
-    {"name": "IP Information", "category": "Network", "description": "View basic IP information."},
-    {"name": "Port Reference", "category": "Network", "description": "Search common network port information."},
-    {"name": "URL Parser", "category": "Web", "description": "Parse URL components."},
-    {"name": "Base64 Encoder", "category": "Encoding", "description": "Encode text to Base64."},
-    {"name": "Base64 Decoder", "category": "Encoding", "description": "Decode Base64 text."},
-    {"name": "Security Tips", "category": "Learning", "description": "Learn safe cybersecurity practices."},
+    ("Password Generator", "Password", "Generate secure passwords"),
+    ("Password Checker", "Password", "Check password strength"),
+    ("SHA256 Generator", "Crypto", "Generate SHA256 hashes"),
+    ("Base64 Encoder", "Encoding", "Encode text"),
+    ("Base64 Decoder", "Encoding", "Decode text"),
+    ("URL Parser", "Web", "Parse URL information"),
+    ("IP Validator", "Network", "Validate IP addresses"),
+    ("Port Reference", "Network", "Learn common port numbers"),
+    ("Security Tips", "Learning", "Cybersecurity advice"),
+    ("Hash Learning", "Crypto", "Learn about hashes"),
+    ("THE GOLD AI", "AI", "Offline AI assistant"),
 ]
 
 
-def load_data():
-    if os.path.exists(DATA_FILE):
+def load_stats():
+    if os.path.exists(DATA):
         try:
-            with open(DATA_FILE, "r") as f:
+            with open(DATA, "r") as f:
                 return json.load(f)
-        except (json.JSONDecodeError, OSError):
+        except (OSError, ValueError):
             pass
-
-    return {"usage": {}, "featured": "", "history": []}
-
-
-data = load_data()
+    return {"usage": {}}
 
 
-def save_data():
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f, indent=4)
+stats = load_stats()
+
+
+def save():
+    with open(DATA, "w") as f:
+        json.dump(stats, f, indent=2)
 
 
 def header():
     print("\n" + "=" * 42)
-    print(f"       👑 {APP_NAME}")
-    print(f"              VERSION {VERSION}")
+    print("       👑 " + APP)
+    print("             VERSION " + VERSION)
     print("=" * 42)
 
 
-def search_tools():
-    query = input("\nSearch tool: ").strip().lower()
-
-    results = [
-        t for t in TOOLS
-        if query in t["name"].lower()
-        or query in t["category"].lower()
-    ]
-
-    if not results:
-        print("No tools found.")
-        return
-
-    for i, tool in enumerate(results, 1):
-        print(f"\n{i}. {tool['name']}")
-        print(f"   Category: {tool['category']}")
-        print(f"   {tool['description']}")
-
+def password_generator():
     try:
-        choice = int(input("\nOpen tool number (0 to cancel): "))
-        if choice == 0:
+        n = int(input("Password length (8-128): "))
+        if not 8 <= n <= 128:
+            print("Choose 8 to 128.")
             return
-        if 1 <= choice <= len(results):
-            open_tool(results[choice - 1])
+        chars = string.ascii_letters + string.digits + "!@#$%&*"
+        print("Password:", "".join(secrets.choice(chars) for _ in range(n)))
     except ValueError:
-        print("Invalid choice.")
+        print("Invalid length.")
 
 
-def open_tool(tool):
-    name = tool["name"]
-    data["usage"][name] = data["usage"].get(name, 0) + 1
-
-    data["history"].append({
-        "tool": name,
-        "time": datetime.now().isoformat(timespec="seconds")
-    })
-
-    data["history"] = data["history"][-100:]
-    save_data()
-
-    print("\n" + "-" * 35)
-    print("TOOL:", name)
-    print(tool["description"])
-    print("-" * 35)
-
-    if name == "Security Tips":
-        print("1. Use unique passwords.")
-        print("2. Enable two-factor authentication.")
-        print("3. Keep software updated.")
-        print("4. Never share verification codes.")
-
-    elif name == "Base64 Encoder":
-        import base64
-        value = input("Enter text: ")
-        print(base64.b64encode(value.encode()).decode())
-
-    elif name == "Base64 Decoder":
-        import base64
-        value = input("Enter Base64: ")
-        try:
-            print(base64.b64decode(value, validate=True).decode())
-        except Exception:
-            print("Invalid Base64 input.")
-
-    elif name == "Hash Generator":
-        import hashlib
-        value = input("Enter text: ")
-        print("SHA256:", hashlib.sha256(value.encode()).hexdigest())
-
-    elif name == "Password Generator":
-        import secrets
-        import string
-        try:
-            length = int(input("Password length (8-128): "))
-            if not 8 <= length <= 128:
-                print("Choose a length between 8 and 128.")
-                return
-            chars = string.ascii_letters + string.digits + "!@#$%^&*"
-            password = ''.join(secrets.choice(chars) for _ in range(length))
-            print("Generated password:", password)
-        except ValueError:
-            print("Invalid length.")
-
-    elif name == "Password Strength Checker":
-        password = input("Enter a password to check: ")
-        score = sum([
-            len(password) >= 12,
-            any(c.islower() for c in password),
-            any(c.isupper() for c in password),
-            any(c.isdigit() for c in password),
-            any(not c.isalnum() for c in password)
-        ])
-        print("Strength:", ["Very weak", "Weak", "Fair", "Good", "Strong", "Very strong"][score])
-
-    elif name == "URL Parser":
-        from urllib.parse import urlparse
-        url = input("Enter URL: ")
-        parsed = urlparse(url)
-        print("Scheme:", parsed.scheme)
-        print("Domain:", parsed.hostname)
-        print("Path:", parsed.path)
-
-    else:
-        print("This tool is in the library.")
-        print("Its full functionality will be added in a future update.")
+def password_checker():
+    p = input("Password to check: ")
+    score = sum([
+        len(p) >= 12,
+        any(c.islower() for c in p),
+        any(c.isupper() for c in p),
+        any(c.isdigit() for c in p),
+        any(not c.isalnum() for c in p)
+    ])
+    levels = ["Very weak", "Weak", "Fair", "Good", "Strong", "Very strong"]
+    print("Strength:", levels[score])
 
 
-def popular_tools():
-    print("\n🏆 MOST POPULAR TOOLS")
-
-    ranking = sorted(
-        TOOLS,
-        key=lambda t: data["usage"].get(t["name"], 0),
-        reverse=True
-    )
-
-    for i, tool in enumerate(ranking[:10], 1):
-        count = data["usage"].get(tool["name"], 0)
-        print(f"{i}. {tool['name']} — {count} uses")
+def sha256():
+    text = input("Text: ")
+    print(hashlib.sha256(text.encode()).hexdigest())
 
 
-def featured_tool():
-    name = data.get("featured", "")
-
-    if not name:
-        print("\nNo featured tool selected yet.")
-        return
-
-    tool = next((t for t in TOOLS if t["name"] == name), None)
-
-    if tool:
-        print("\n⭐ FEATURED TOOL:", name)
-        open_tool(tool)
+def encode():
+    text = input("Text: ")
+    print(base64.b64encode(text.encode()).decode())
 
 
-def set_featured():
-    print("\nChoose a featured tool:")
-    for i, tool in enumerate(TOOLS, 1):
-        print(f"{i}. {tool['name']}")
-
+def decode():
+    text = input("Base64: ")
     try:
-        choice = int(input("Number: "))
-        if 1 <= choice <= len(TOOLS):
-            data["featured"] = TOOLS[choice - 1]["name"]
-            save_data()
-            print("Featured tool updated!")
-        else:
-            print("Invalid number.")
+        print(base64.b64decode(text, validate=True).decode())
+    except Exception:
+        print("Invalid Base64.")
+
+
+def url_parser():
+    url = input("URL: ")
+    result = urlparse(url)
+    print("Scheme:", result.scheme)
+    print("Domain:", result.hostname)
+    print("Path:", result.path)
+
+
+def ip_validator():
+    import ipaddress
+    ip = input("IP address: ")
+    try:
+        print("Valid IP:", ipaddress.ip_address(ip))
     except ValueError:
-        print("Invalid choice.")
+        print("Invalid IP address.")
+
+
+def port_reference():
+    ports = {
+        21: "FTP",
+        22: "SSH",
+        53: "DNS",
+        80: "HTTP",
+        443: "HTTPS",
+        3306: "MySQL",
+        5432: "PostgreSQL"
+    }
+    try:
+        p = int(input("Port number: "))
+        print(ports.get(p, "No entry in built-in reference"))
+    except ValueError:
+        print("Enter a valid number.")
+
+
+def security_tips():
+    tips = [
+        "Use unique passwords.",
+        "Enable two-factor authentication.",
+        "Keep your phone updated.",
+        "Never share OTP codes.",
+        "Use HTTPS websites.",
+        "Back up important data."
+    ]
+    for tip in tips:
+        print("[+] " + tip)
+
+
+def hash_learning():
+    print("SHA256: 256-bit cryptographic hash")
+    print("SHA512: 512-bit cryptographic hash")
+    print("MD5: Legacy hash, not recommended for security.")
 
 
 def gold_ai():
-    print("\n🤖 THE GOLD AI")
-    print("Offline starter assistant")
-    print("Type 'exit' to return.")
+    print("\n👑 THE GOLD AI")
+    print("Offline starter assistant.")
+    print("Type exit to return.")
 
     while True:
-        question = input("\nYou: ").strip().lower()
+        q = input("\nYou: ").lower().strip()
 
-        if question == "exit":
-            break
-
-        if any(word in question for word in ["hello", "hi", "hey"]):
-            answer = "Hello! Welcome to THE GOLD AI."
-
-        elif "password" in question:
-            answer = "Use long, unique passwords and enable 2FA."
-
-        elif "security" in question:
-            answer = "Keep your devices updated and use trusted software."
-
-        elif "hacking" in question:
-            answer = "Learn ethical hacking in authorized lab environments."
-
-        elif "termux" in question:
-            answer = "Termux lets you run Python and Linux command-line tools on Android."
-
+        if q == "exit":
+            return
+        elif "hello" in q or q == "hi":
+            answer = "Welcome! I am THE GOLD AI."
+        elif "password" in q:
+            answer = "Use long unique passwords and enable 2FA."
+        elif "security" in q:
+            answer = "Keep your devices updated and protected."
+        elif "python" in q:
+            answer = "Python is a great language for cybersecurity."
+        elif "hacking" in q:
+            answer = "Practice ethical hacking only in authorized labs."
         else:
-            answer = "I am an offline starter AI. My knowledge is currently limited."
+            answer = "I am an offline starter AI. More knowledge will be added."
 
         print("THE GOLD AI:", answer)
+
+
+FUNCTIONS = {
+    "Password Generator": password_generator,
+    "Password Checker": password_checker,
+    "SHA256 Generator": sha256,
+    "Base64 Encoder": encode,
+    "Base64 Decoder": decode,
+    "URL Parser": url_parser,
+    "IP Validator": ip_validator,
+    "Port Reference": port_reference,
+    "Security Tips": security_tips,
+    "Hash Learning": hash_learning,
+    "THE GOLD AI": gold_ai,
+}
+
+
+def run_tool(tool):
+    name = tool[0]
+    stats["usage"][name] = stats["usage"].get(name, 0) + 1
+    save()
+    print("\n--- " + name + " ---")
+    FUNCTIONS[name]()
+
+
+def search():
+    q = input("Search: ").lower().strip()
+    found = [t for t in TOOLS if q in t[0].lower() or q in t[1].lower()]
+
+    if not found:
+        print("No matching tool found.")
+        return
+
+    for i, t in enumerate(found, 1):
+        print(f"{i}. {t[0]} - {t[2]}")
+
+    try:
+        n = int(input("Select number (0 to cancel): "))
+        if 1 <= n <= len(found):
+            run_tool(found[n - 1])
+    except ValueError:
+        print("Invalid selection.")
+
+
+def popular():
+    ranking = sorted(
+        TOOLS,
+        key=lambda t: stats["usage"].get(t[0], 0),
+        reverse=True
+    )
+    print("\n🏆 MOST POPULAR TOOLS")
+    for i, t in enumerate(ranking[:10], 1):
+        count = stats["usage"].get(t[0], 0)
+        print(f"{i}. {t[0]} - {count} uses")
 
 
 def main():
     while True:
         header()
+        print("1. All Tools")
+        print("2. Search Tools")
+        print("3. Most Popular")
+        print("4. THE GOLD AI")
+        print("5. Security Tips")
+        print("6. Exit")
 
-        print("1. Search Tools")
-        print("2. All Tools")
-        print("3. Most Popular Tools")
-        print("4. Featured Tool")
-        print("5. Set Featured Tool")
-        print("6. THE GOLD AI")
-        print("7. Exit")
-
-        choice = input("\nSelect option: ").strip()
+        choice = input("\nChoose: ").strip()
 
         if choice == "1":
-            search_tools()
+            for i, t in enumerate(TOOLS, 1):
+                print(f"{i}. {t[0]} [{t[1]}]")
+            try:
+                n = int(input("Tool number (0 to cancel): "))
+                if 1 <= n <= len(TOOLS):
+                    run_tool(TOOLS[n - 1])
+            except ValueError:
+                print("Invalid number.")
 
         elif choice == "2":
-            for tool in TOOLS:
-                print(f"\n{tool['name']} [{tool['category']}]")
-                print(tool["description"])
-
+            search()
         elif choice == "3":
-            popular_tools()
-
+            popular()
         elif choice == "4":
-            featured_tool()
-
-        elif choice == "5":
-            set_featured()
-
-        elif choice == "6":
             gold_ai()
-
-        elif choice == "7":
-            print("Thanks for using MR-A-SECKIT GOLD!")
+        elif choice == "5":
+            security_tips()
+        elif choice == "6":
+            print("Goodbye from MrA-SecKit GOLD!")
             break
-
         else:
             print("Invalid option.")
 
