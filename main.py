@@ -1,14 +1,30 @@
+import getpass
 import json
 import os
 import hashlib
 import secrets
 import string
 import base64
+import urllib.error
+import urllib.request
 from urllib.parse import urlparse
 
 APP = "MrA-SecKit GOLD"
-VERSION = "3.0"
+VERSION = "3.1"
 DATA = "gold_stats.json"
+GEMINI_MODEL = "gemini-3.6-flash"
+GEMINI_URL = (
+    "https://generativelanguage.googleapis.com/"
+    f"v1beta/models/{GEMINI_MODEL}:generateContent"
+)
+GOLD_AI_SYSTEM_PROMPT = """
+You are THE GOLD AI, assistant of MrA-SecKit.
+Help with Python, Termux, coding and cybersecurity.
+Explain errors step by step.
+Only support authorized and defensive security work.
+Never claim a tool works unless it has been tested.
+Use Hindi or English according to the user's language.
+""".strip()
 
 TOOLS = [
     ("Password Generator", "Password", "Generate secure passwords"),
@@ -21,7 +37,7 @@ TOOLS = [
     ("Port Reference", "Network", "Learn common port numbers"),
     ("Security Tips", "Learning", "Cybersecurity advice"),
     ("Hash Learning", "Crypto", "Learn about hashes"),
-    ("THE GOLD AI", "AI", "Offline AI assistant"),
+    ("THE GOLD AI", "AI", "Gemini-powered assistant"),
 ]
 
 
@@ -29,7 +45,9 @@ def load_stats():
     if os.path.exists(DATA):
         try:
             with open(DATA, "r") as f:
-                return json.load(f)
+                loaded = json.load(f)
+            if isinstance(loaded, dict) and isinstance(loaded.get("usage"), dict):
+                return loaded
         except (OSError, ValueError):
             pass
     return {"usage": {}}
@@ -147,29 +165,72 @@ def hash_learning():
 
 
 def gold_ai():
-    print("\n👑 THE GOLD AI")
-    print("Offline starter assistant.")
-    print("Type exit to return.")
+    print("\n👑 THE GOLD AI — Gemini-powered assistant")
+    print("Type 'exit' to return. Your API key is requested privately and is not saved.\n")
 
-    while True:
-        q = input("\nYou: ").lower().strip()
-
-        if q == "exit":
+    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        try:
+            api_key = getpass.getpass("Enter your Gemini API key: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nAPI key input cancelled.")
             return
-        elif "hello" in q or q == "hi":
-            answer = "Welcome! I am THE GOLD AI."
-        elif "password" in q:
-            answer = "Use long unique passwords and enable 2FA."
-        elif "security" in q:
-            answer = "Keep your devices updated and protected."
-        elif "python" in q:
-            answer = "Python is a great language for cybersecurity."
-        elif "hacking" in q:
-            answer = "Practice ethical hacking only in authorized labs."
-        else:
-            answer = "I am an offline starter AI. More knowledge will be added."
 
-        print("THE GOLD AI:", answer)
+    if not api_key:
+        print("API key is required. You can set GEMINI_API_KEY and try again.")
+        return
+
+    history = []
+    while True:
+        try:
+            question = input("\nYOU > ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nReturning to the main menu.")
+            return
+
+        if question.lower() in ("exit", "quit"):
+            print("THE GOLD AI > Goodbye!")
+            return
+        if not question:
+            continue
+
+        history.append({"role": "user", "parts": [{"text": question}]})
+        payload = {
+            "system_instruction": {"parts": [{"text": GOLD_AI_SYSTEM_PROMPT}]},
+            "contents": history,
+            "generationConfig": {"temperature": 0.7, "maxOutputTokens": 2048},
+        }
+        request = urllib.request.Request(
+            GEMINI_URL,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "x-goog-api-key": api_key,
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+
+        try:
+            with urllib.request.urlopen(request, timeout=60) as response:
+                result = json.loads(response.read().decode("utf-8"))
+
+            answer = result["candidates"][0]["content"]["parts"][0]["text"]
+            print("\n👑 THE GOLD AI:")
+            print(answer)
+            history.append({"role": "model", "parts": [{"text": answer}]})
+            if len(history) > 20:
+                history = history[-20:]
+
+        except urllib.error.HTTPError as error:
+            details = error.read().decode("utf-8", errors="replace")
+            print(f"\nAI request failed (HTTP {error.code}): {details[:1000]}")
+            history.pop()
+        except (urllib.error.URLError, TimeoutError) as error:
+            print("Connection error:", error)
+            history.pop()
+        except (KeyError, IndexError, TypeError, ValueError) as error:
+            print("Could not read the AI response:", error)
+            history.pop()
 
 
 FUNCTIONS = {
