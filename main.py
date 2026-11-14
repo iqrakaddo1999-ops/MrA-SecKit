@@ -1,115 +1,116 @@
-import getpass
-import platform
-import secrets
-import socket
-import string
-import subprocess
-
-SPECIAL_CHARACTERS = "!@#$%^&*()-_=+[]{};:,.?/~"
-LOCAL_PORTS = (21, 22, 23, 80, 443, 8080)
+import time
 
 
-def check_password_strength(password):
-    checks = {
-        "At least 12 characters": len(password) >= 12,
-        "Uppercase letter": any(char.isupper() for char in password),
-        "Lowercase letter": any(char.islower() for char in password),
-        "Number": any(char.isdigit() for char in password),
-        "Symbol": any(char in SPECIAL_CHARACTERS for char in password),
-    }
-    score = sum(checks.values())
-    strength = "Strong" if score == len(checks) else "Moderate" if score >= 3 else "Weak"
+class MrASecKitShell:
+    def __init__(self):
+        self.modules = {}
+        self.load_tool_database()
 
-    print(f"\nPassword strength: {strength} ({score}/{len(checks)} checks passed)")
-    for description, passed in checks.items():
-        print(f"- {description}: {'OK' if passed else 'Missing'}")
+    def load_tool_database(self):
+        self.tool_database = {
+            "nmap": "Network mapper and port scanner utility",
+            "metasploit": "Penetration testing framework simulation",
+            "wireshark": "Network packet analyzer tool",
+            "hydra": "Login cracker supporting various protocols",
+            "john": "Password security auditing and cracking tool",
+            "aircrack-ng": "802.11 WEP/WPA-PSK cracking utility",
+            "sqlmap": "Automatic SQL injection and database takeover tool",
+            "hashcat": "Advanced password recovery utility",
+            "setoolkit": "Social-engineering toolkit framework",
+            "nikto": "Web server vulnerability scanner",
+        }
 
+    def register_module(self, name, func, description):
+        self.modules[name] = {"func": func, "desc": description}
 
-def generate_password(length=16):
-    length = max(12, length)
-    alphabet = string.ascii_letters + string.digits + SPECIAL_CHARACTERS
-    password = ''.join(secrets.choice(alphabet) for _ in range(length))
-    print("\nGenerated password (save it somewhere safe):")
-    print(password)
+    def banner(self):
+        print("=" * 55)
+        print("      MrA-SecKit v2.2 - Advanced Tool Search      ")
+        print(f"      Database Index: {len(self.tool_database)} Tools Registered")
+        print("=" * 55)
+        print("Type 'help' for commands, 'search <tool>' to find tools, or 'learn' to study.\n")
 
+    def cmd_help(self):
+        print("\n--- Built-in Core Commands ---")
+        for name, info in self.modules.items():
+            print(f"  {name:<15} - {info['desc']}")
+        print("  search <name>   - Search from the tool index")
+        print("  exit            - Exit MrA-SecKit")
+        print()
 
-def check_local_ports():
-    host = "127.0.0.1"
-    print(f"\nChecking selected ports on this device ({host})...")
-    for port in LOCAL_PORTS:
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                sock.settimeout(0.5)
-                status = sock.connect_ex((host, port))
-            print(f"Port {port}: {'open' if status == 0 else 'closed or not responding'}")
-        except OSError as error:
-            print(f"Port {port}: check failed ({error})")
+    def cmd_search(self, query):
+        if not query:
+            print("[-] Please provide a tool name to search. Example: search nmap")
+            return
 
+        print(f"\n[🔍] Searching for '{query}' in database...")
+        time.sleep(0.5)
 
-def list_visible_wifi_networks():
-    print("\nWi-Fi networks visible to this device:")
-    system = platform.system()
-    if system == "Windows":
-        command = ["netsh", "wlan", "show", "networks", "mode=bssid"]
-    elif system == "Linux":
-        command = ["nmcli", "dev", "wifi"]
-    else:
-        print("Wi-Fi listing is not configured for this operating system.")
-        return
+        found = False
+        for tool, desc in self.tool_database.items():
+            if query.lower() in tool.lower():
+                print(f"  [+] Found -> {tool} : {desc}")
+                found = True
 
-    try:
-        result = subprocess.run(
-            command,
-            check=True,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=15,
-        )
-        print(result.stdout or "No networks were listed.")
-    except FileNotFoundError:
-        print("Required Wi-Fi command was not found on this device.")
-    except subprocess.CalledProcessError as error:
-        print(error.stderr.strip() or "Wi-Fi listing failed.")
-    except subprocess.TimeoutExpired:
-        print("Wi-Fi listing timed out.")
-    except OSError as error:
-        print(f"Could not list Wi-Fi networks: {error}")
+        if not found:
+            print(f"[-] '{query}' not found in the database.")
+        print()
 
+    def cmd_learn(self):
+        print("\n" + "=" * 40)
+        print("      MrA-SecKit : Ethical Hacking Guide      ")
+        print("=" * 40)
+        print("1. What are Network Ports?")
+        print("2. What is Password Brute-force?")
+        print("3. Wi-Fi Security Basics")
+        print("4. Back to Main Menu")
 
-def main():
-    while True:
-        print("\n=== MrA-SecKit: Safe Local Toolkit ===")
-        print("1. Check password strength")
-        print("2. Generate a strong password")
-        print("3. Check selected ports on this device")
-        print("4. List visible Wi-Fi networks")
-        print("5. Exit")
-        choice = input("Choose an option (1-5): ").strip()
-
+        choice = input("\nSelect a topic to study (1-4): ").strip()
         if choice == "1":
-            check_password_strength(getpass.getpass("Enter password (input is hidden): "))
+            print("\n[📚 Lesson: Network Ports]")
+            print("- Computers have ports from 0 to 65535 (e.g., Port 80 for HTTP).\n")
         elif choice == "2":
-            raw_length = input("Password length (default 16): ").strip()
-            try:
-                length = int(raw_length) if raw_length else 16
-                if length < 1:
-                    raise ValueError
-            except ValueError:
-                print("Please enter a positive whole number.")
-                continue
-            generate_password(length)
+            print("\n[📚 Lesson: Password Brute-force]")
+            print("- This means trying password guesses repeatedly. Only assess systems you own or have explicit permission to test.\n")
         elif choice == "3":
-            check_local_ports()
-        elif choice == "4":
-            list_visible_wifi_networks()
-        elif choice == "5":
-            print("Bye!")
-            break
+            print("\n[📚 Lesson: Wi-Fi Security Basics]")
+            print("- Use WPA2-AES or WPA3, a unique strong password, and updated router firmware.\n")
         else:
-            print("Invalid choice. Choose a number from 1 to 5.")
+            print("Returning to main menu...\n")
+
+    def run(self):
+        self.banner()
+        while True:
+            try:
+                user_input = input("MrA-SecKit> ").strip()
+                if not user_input:
+                    continue
+
+                parts = user_input.split(" ", 1)
+                command = parts[0].lower()
+                arg = parts[1] if len(parts) > 1 else ""
+
+                if command == "exit":
+                    print("Exiting MrA-SecKit... Goodbye!")
+                    break
+                elif command == "help":
+                    self.cmd_help()
+                elif command == "search":
+                    self.cmd_search(arg)
+                elif command == "learn":
+                    self.cmd_learn()
+                elif command in self.modules:
+                    self.modules[command]["func"]()
+                else:
+                    print(f"[-] Unknown command: '{command}'. Type 'help' for options.")
+
+            except KeyboardInterrupt:
+                print("\nUse 'exit' to properly close the tool.")
+            except Exception as error:
+                print(f"[-] Error: {error}")
 
 
 if __name__ == "__main__":
-    main()
+    kit = MrASecKitShell()
+    kit.register_module("learn", kit.cmd_learn, "Built-in security tutorials")
+    kit.run()
